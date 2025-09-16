@@ -14,6 +14,6 @@ This repo contains code for Project 1 of Quantitative Foundations, focusing on l
   - Output: `predictions.txt`, console output with training/test errors.
 
 ## Usage
-- Place `traindata.txt` (926 rows × 9 cols) and `testinputs.txt` (103 rows × 8 cols) in the directory.
+- Place `traindata.txt` (926 rows × 9 cols) and `testinputs.txt` (103 rows × 8 cols) in the directory as the code to be executed.
 - Install dependencies: `pip install numpy matplotlib scikit-learn`.
 - Run scripts to generate `predictions.txt` with 103 predicted values.
