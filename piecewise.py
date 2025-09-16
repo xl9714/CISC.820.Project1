@@ -5,11 +5,12 @@ from sklearn.linear_model import Ridge
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.model_selection import KFold
 from sklearn.metrics import mean_squared_error
+import argparse
 import warnings
 warnings.filterwarnings('ignore')
 
 class PiecewiseRegressor:
-    def __init__(self, n_pieces=4, alpha=0.1, poly_degree=2, min_samples_leaf=10):
+    def __init__(self, n_pieces=5, alpha=0.1, poly_degree=2, min_samples_leaf=10):
         self.n_pieces = n_pieces
         self.alpha = alpha
         self.poly_degree = poly_degree
@@ -107,31 +108,44 @@ def load_data():
     X_test = np.loadtxt('testinputs.txt')
     return X_train, y_train, X_test
 
-def evaluate_piecewise_model(X_train, y_train):
-    kfold = KFold(n_splits=10, shuffle=True, random_state=42)
+def evaluate_piecewise_model(X_train, y_train, k_folds=10, **model_params):
+    kfold = KFold(n_splits=k_folds, shuffle=True, random_state=42)
     cv_scores = []
     
     for train_idx, val_idx in kfold.split(X_train):
         X_tr, X_val = X_train[train_idx], X_train[val_idx]
         y_tr, y_val = y_train[train_idx], y_train[val_idx]
         
-        model = PiecewiseEnsemble(n_models=3)
+        model = PiecewiseEnsemble(**model_params)
         model.fit(X_tr, y_tr)
         y_pred = model.predict(X_val)
         cv_scores.append(mean_squared_error(y_val, y_pred))
     
-    return np.mean(cv_scores), np.std(cv_scores)
+    return np.mean(cv_scores)
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--n_models', type=int, default=5)
+    parser.add_argument('--n_pieces', type=int, default=4)
+    parser.add_argument('--alpha', type=float, default=0.1)
+    parser.add_argument('--poly_degree', type=int, default=2)
+    parser.add_argument('--min_samples_leaf', type=int, default=10)
+    parser.add_argument('--k_folds', type=int, default=10)
+    args = parser.parse_args()
+    
     X_train, y_train, X_test = load_data()
     
-    print("Evaluating piecewise model with 10-fold CV...")
-    cv_mean, cv_std = evaluate_piecewise_model(X_train, y_train)
-    print(f"Piecewise model 10-fold CV: {cv_mean:.6f} ± {cv_std:.6f}")
+    model_params = {
+        'n_models': args.n_models,
+        'n_pieces': args.n_pieces,
+        'alpha': args.alpha,
+        'poly_degree': args.poly_degree,
+        'min_samples_leaf': args.min_samples_leaf
+    }
     
-    # Train the besdt final piecewise model
-    print("\nTraining final piecewise model...")
-    final_model = PiecewiseEnsemble(n_models=5)
+    cv_mean = evaluate_piecewise_model(X_train, y_train, args.k_folds, **model_params)
+    
+    final_model = PiecewiseEnsemble(**model_params)
     final_model.fit(X_train, y_train)
     
     train_pred = final_model.predict(X_train)
@@ -139,11 +153,10 @@ def main():
     
     train_error = mean_squared_error(y_train, train_pred)
     
-    print(f"Piecewise model training error: {train_error:.6f}")
-    print(f"Piecewise model estimated test error (10-fold CV): {cv_mean:.6f}")
+    print(f"Training Error: {train_error:.6f}")
+    print(f"Test Error: {cv_mean:.6f}")
     
     np.savetxt('predictions.txt', test_pred, fmt='%.6f')
-    print("Predictions saved to 'predictions.txt'")
     
     return final_model, test_pred
 
