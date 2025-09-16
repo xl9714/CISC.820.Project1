@@ -1,0 +1,6 @@
+Polynomial
+n=926, d=8
+Selected: p=4, K=8
+Ein=36.114370
+CV train mean = 35.379310
+Predicted test error (CV mean) = 51.783714
